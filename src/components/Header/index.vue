@@ -8,8 +8,8 @@
           <p>尚品汇欢迎您！</p>
           <p>
             <span>请</span>
-            <router-link to="/login">登录</router-link>
-            <router-link to="/registry" class="register">免费注册</router-link>
+            <a href="###">登录</a>
+            <a href="###" class="register">免费注册</a>
           </p>
         </div>
         <div class="typeList">
@@ -27,14 +27,14 @@
     <!--头部第二行 搜索区域-->
     <div class="bottom">
       <h1 class="logoArea">
-        <router-link class="logo" to="/home">
+        <a class="logo" title="尚品汇" href="###" target="_blank">
           <img src="./images/logo.png" alt />
-        </router-link>
+        </a>
       </h1>
       <div class="searchArea">
         <form action="###" class="searchForm">
-          <input type="text" id="autocomplete" v-model="keyWord" class="input-error input-xxlarge" />
-          <button class="sui-btn btn-xlarge btn-danger" type="button" @click="search">搜索</button>
+          <input type="text" id="autocomplete" class="input-error input-xxlarge" v-model="keyWord" />
+          <button class="sui-btn btn-xlarge btn-danger" type="button" @click="goSearch">搜索</button>
         </form>
       </div>
     </div>
@@ -44,36 +44,50 @@
 <script>
 export default {
   name: "",
-  comments:{
-
+  data() {
+    return {
+      //响应式数据，用于收集表单元素文本内容
+      keyWord: "",
+    };
   },
-  data(){
-    return{
-      keyWord:""
-    }
-  },
-  methods:{
-    search(){
-      // 路由传递参数
-      //1.字符串形式
-      //this.$router.push("/search/"+this.keyWord+"?k="+this.keyWord.toUpperCase())
-      //2.模板字符串
-      // this.$router.push(`./search/${this.keyWord}?k=${this.keyWord.toUpperCase()}`)
-      //3.对象
-      //this.$router.push({name:"search",params:{keyWord:this.keyWord},query:{k:this.keyWord.toUpperCase()}})
-      //this.$router.push({path:"search",params:{keyWord:this.keyWord},query:{k:this.keyWord.toUpperCase()}})
-    
-      //this.$router.push({name:"search",params:{keyWord:"" || undefined},query:{k:this.keyWord.toUpperCase()}})
-
-      //若有query参数
-      if(this.$router.query){
-        let location = {name:"search",params:{keyWord:"" || undefined}}
-        location.query = this.$router.query
-        this.$router.push(location)
+  methods: {
+    //搜索按钮的事件处理函数，用于跳转到search路由组件当中
+    goSearch() {
+      //代表的是如果有query参数也带过去
+      if (this.$route.query) {
+        let loction = {
+          name: "search",
+          params: { keyWord: this.keyWord || undefined },
+        };
+        loction.query = this.$route.query;
+        this.$router.push(loction);
       }
-    
-    }
-  }
+    },
+    //   //退出登录
+    //   async logout() {
+    //     //退出登录需要做的事情
+    //     //1:需要发请求，通知服务器退出登录【清除一些数据：token】
+    //     //2:清除项目当中的数据【userInfo、token】
+    //     try {
+    //       //如果退出成功
+    //       await this.$store.dispatch("userLogout");
+    //       //回到首页
+    //       this.$router.push("/home");
+    //     } catch (error) {}
+    //   },
+    // },
+    // mounted() {
+    //   //通过全局事件总线清除关键字
+    //   this.$bus.$on("clear", () => {
+    //     this.keyword = "";
+    //   });
+    // },
+    // computed: {
+    //   //用户名信息
+    //   userName() {
+    //     return this.$store.state.user.userInfo.name;
+    //   },
+  },
 };
 </script>
 

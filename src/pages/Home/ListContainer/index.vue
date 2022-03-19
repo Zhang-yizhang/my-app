@@ -4,12 +4,11 @@
     <div class="sortList clearfix">
       <div class="center">
         <!--banner轮播-->
-        <div class="swiper-container" id="mySwiper">
+        <div ref="mySwiper" class="swiper-container" id="mySwiper">
           <div class="swiper-wrapper">
-            <div class="swiper-slide">
-              <img src="./images/banner1.jpg" />
+            <div class="swiper-slide" v-for="(carousel,index) in bannerList" :key="index">
+              <img :src="carousel.imgUrl" />
             </div>
-        
           </div>
           <!-- 如果需要分页器 -->
           <div class="swiper-pagination"></div>
@@ -103,10 +102,51 @@
 </template>
 
 <script>
-export default {};
-</script>
+import Swiper from "swiper/js/swiper";
+import { mapState } from "vuex";
 
-<style scoped lang="less">
+export default {
+  name: "ListContainer",
+
+  computed: {
+    ...mapState({
+      bannerList: (state) => state.home.banners,
+    }),
+  },
+  watch: {
+    bannerList: {
+      handler(newValue, oldValue) {
+        this.$nextTick(() => {
+          const mySwiper = new Swiper(
+            this.$refs.mySwiper,
+            {
+              loop: true,
+              // 如果需要分页器
+              pagination: {
+                el: ".swiper-pagination",
+                //点击小球的时候也切换图片
+                clickable: true,
+              },
+              // 如果需要前进后退按钮
+              navigation: {
+                nextEl: ".swiper-button-next",
+                prevEl: ".swiper-button-prev",
+              },
+            }
+          );
+        });
+      },
+    },
+  },
+  mounted() {
+    //派发请求
+    this.$store.dispatch("getBannerList");
+    setTimeout(() => {}, 1000);
+  },
+  updated() {},
+};
+</script>
+<style lang="less" scoped>
 .list-container {
   width: 1200px;
   margin: 0 auto;
@@ -279,3 +319,4 @@ export default {};
   }
 }
 </style>
+

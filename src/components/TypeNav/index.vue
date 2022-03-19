@@ -2,7 +2,56 @@
   <!-- 商品分类导航 -->
   <div class="type-nav">
     <div class="container">
-      <h2 class="all" @mouseenter="mouseEnter()" @mouseleave="mouseLeave()">全部商品分类</h2>
+      <!-- 事件委派 -->
+      <div @mouseleave="leaveShow" @mouseenter="enterShow">
+        <h2 class="all">全部商品分类</h2>
+        <transition name="sort">
+          <div class="sort" v-show="isShow">
+            <div class="all-sort-list2" @click="goSearch">
+              <div
+                :class="{active:currentIndex === index}"
+                class="item bo"
+                v-for="(c1,index) in categoryList"
+                :key="index"
+              >
+                <h3 @mouseenter="changeIndex(index)">
+                  <a
+                    href="#"
+                    :data-categoryName="c1.categoryName"
+                    :data-category1Id="c1.categoryId"
+                  >{{c1.categoryName}}</a>
+                </h3>
+                <div
+                  class="item-list clearfix"
+                  :style="{display:currentIndex===index?'block':'none'}"
+                >
+                  <div class="subitem" v-for="(c2,index) in c1.categoryChild" :key="index">
+                    <dl class="fore">
+                      <dt>
+                        <a
+                          href="#"
+                          :data-categoryName="c2.categoryName"
+                          :data-category2Id="c2.categoryId"
+                        >{{c2.categoryName}}</a>
+                      </dt>
+                      <dd>
+                        <em v-for="(c3,index) in c2.categoryChild" :key="index">
+                          <a
+                            href="#"
+                            :data-categoryName="c3.categoryName"
+                            :data-category3Id="c3.categoryId"
+                          >{{c3.categoryName}}</a>
+                        </em>
+                      </dd>
+                    </dl>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </div>
+
       <nav class="nav">
         <a href="###">服装城</a>
         <a href="###">美妆馆</a>
@@ -13,126 +62,99 @@
         <a href="###">有趣</a>
         <a href="###">秒杀</a>
       </nav>
-      <transition name="sort">
-        <div class="sort" v-show="show">
-          <div class="all-sort-list2">
-            <div class="item" v-for="(c1,index) in categoryList" :key="c1.categoryId" ref="item">
-              <h3
-                :class="{hoverClass:currentId == index}"
-                @mousemove="onMouseOver(index)"
-                @mouseout="onMouseOut()"
-              >
-                <a
-                  :data-categoryName="c1.categoryName"
-                  :data-category1Id="c1.categoryId"
-                  @click="goSearch"
-                >{{c1.categoryName}}</a>
-                <!-- <router-link to="/search">{{c1.categoryName}}</router-link> -->
-              </h3>
-              <!-- 二三级菜单 -->
-              <div class="item-list clearfix" :style="{display:currentId==index?'block':'none'}">
-                <div class="subitem" v-for="c2 in c1.categoryChild" :key="c2.categoryId">
-                  <dl class="fore">
-                    <dt>
-                      <a
-                        :data-categoryName="c2.categoryName"
-                        :data-category2Id="c2.categoryId"
-                        @click="goSearch"
-                      >{{c2.categoryName}}</a>
-                    </dt>
-                    <dd>
-                      <em v-for="c3 in c2.categoryChild" :key="c3.categoryId">
-                        <a
-                          :data-categoryName="c3.categoryName"
-                          :data-category3Id="c3.categoryId"
-                          @click="goSearch"
-                        >{{c3.categoryName}}</a>
-                      </em>
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </transition>
     </div>
   </div>
 </template>
 
 <script>
 import { mapState } from "vuex";
+//引入lodash:是把lodash全部封装好的函数全都引入进来了
+//按需引入：只是引入节流函数，其他的函数没有引入（模块），这样做的好处是，当你打包项目的时候体积会小一些
 import throttle from "lodash/throttle";
 export default {
   name: "TypeNav",
   data() {
     return {
-      currentId: undefined,
-      show: true,
+      //当前这个属性决定了到底那个h3身上有类名
+      currentIndex: -1,
+      isShow: true,
     };
   },
-
-  //组件挂载完毕，通知vuex向服务器发送请求
+  //发请求经常在mounted生命周期函数中进行
+  //组件挂载完毕
   mounted() {
-    this.$store.dispatch("categoryList");
+    //当组件挂载完毕，让show属性变为false
+    //如果不是Home路由组件，将typeNav进行隐藏
+    if (this.$route.path != "/home") {
+      this.isShow = false;
+    }
   },
+  //计算属性
   computed: {
+    //state:他是咱们大仓库中的state（包含home|search）
     ...mapState({
-      // state参数保存vuex组件数据
       categoryList: (state) => state.home.categoryList,
     }),
   },
   methods: {
-    // onMouseOver(index) {
-    //   this.currentId = index;
-    // },
-    onMouseOver: throttle(function (index) {
-      // 三级联动节流
-      this.currentId = index;
-    }, 50),
-    onMouseOut() {
-      this.currentId = -1;
-    },
+    //用于修改组件实例身上的currentIndex的属性值
+    //当用户鼠标移入到h3身上的时候就会立即出发一次
+    changeIndex: throttle(function (index) {
+      //修改当前currentIndex索引值
+      //函数节流:在20MS时间之内只能执行一次
+      this.currentIndex = index;
+    }, 20),
+    //进行路由跳转的回调函数
     goSearch(event) {
-      let ele = event.target;
-      console.log("dataset:",ele.dataset);
-
-      let { categoryname, category1id, category2id, category3id } = ele.dataset;
-
-      // 如果具有categoryName的话则为a标签
+      //event.target:获取到的是出发事件的元素(div、h3、a、em、dt、dl)
+      let node = event.target;
+      // console.log(node.dataset);
+      //给a标签添加自定义属性data-categoryName,全部的字标签当中只有a标签带有自定义属性，别的标签名字----dataset纯属扯淡
+      let { categoryname, category1id, category2id, category3id } =
+        node.dataset;
+      //第二个问题解决了：点击的到底是不是a标签（只要这个标签身上带有categoryname）一定是a标签
+      //当前这个if语句：一定是a标签才会进入
       if (categoryname) {
-        let location = { name: "search" };
+        //准备路由跳转的参数对象
+        let loction = { name: "search" };
         let query = { categoryName: categoryname };
+        //一定是a标签：一级目录
         if (category1id) {
-          console.log("ronima");
           query.category1Id = category1id;
+          //一定是a标签：二级目录
         } else if (category2id) {
           query.category2Id = category2id;
+          //一定是a标签：三级目录
         } else {
           query.category3Id = category3id;
         }
-        location.query = query;
-        this.$router.push(location);
+        //判断：如果路由跳转的时候，带有params参数，捎带脚传递过去
+        if (this.$route.params) {
+          loction.params = this.$route.params;
+          //动态给location配置对象添加query属性
+          loction.query = query;
+          //路由跳转
+          this.$router.push(loction);
+        }
       }
     },
-
-    //鼠标移入状态
-    mouseEnter() {
-      // 如果是非home页面，则show为false
+    //当鼠标移入的时候，让商品分类列表进行展示
+    enterShow() {
       if (this.$route.path != "/home") {
-        this.show = true;
+        this.isShow = true;
       }
     },
-    mouseLeave() {
-      // 如果是非home页面，则show为false
+    //当鼠标离开的时候，让商品分类列表进行隐藏
+    leaveShow() {
+      this.currentIndex = -1;
+      //判断如果是Search路由组件的时候才会执行
       if (this.$route.path != "/home") {
-        this.show = false;
+        this.isShow = false;
       }
     },
   },
 };
 </script>
-
 <style scoped lang="less">
 .type-nav {
   border-bottom: 2px solid #e1251b;
@@ -175,12 +197,6 @@ export default {
       z-index: 999;
 
       .all-sort-list2 {
-        // .item:hover{
-        //   background: lightblue;
-        // }
-        .hoverClass {
-          background: lightblue;
-        }
         .item {
           h3 {
             line-height: 30px;
@@ -192,12 +208,11 @@ export default {
 
             a {
               color: #333;
-              cursor: pointer;
-              border-bottom: 1px solid #ddd;
             }
           }
 
           .item-list {
+            display: none;
             position: absolute;
             width: 734px;
             min-height: 460px;
@@ -250,16 +265,39 @@ export default {
             }
           }
         }
+        .active {
+          background: lightblue;
+        }
       }
     }
-    // 过度动画效果
-    // 进入
-    .sort-enter{
+    // 过渡动画开始状态
+    .sort-enter {
       height: 0;
+      // 旋转动画
+      //transform: rotate(0);
     }
-    .sort-enter-to{
+    // 过渡动画结束状态
+    .sort-enter-to {
       height: 461px;
-      transition: all .5s linear;
+      //transform: rotate(360deg);
+    }
+    // 定义动画时间、速率
+    .sort-enter-active {
+      transition: all 0.35s linear;
+    }
+    // 过度动画离开
+    .sort-leave {
+      height: 461px;
+      transform: rotate(0deg);
+    }
+    // 过渡动画离开结束状态
+    .sort-leave-to {
+      height: 0px;
+      // transform: rotate(90deg);
+    }
+    // 定义动画离开时间、速率
+    .sort-leave-active {
+      transition: all 0.35s linear;
     }
   }
 }
